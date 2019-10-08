@@ -3,19 +3,14 @@
 const PDFDocument = require("pdfkit");
 const SVGtoPDF = require("svg-to-pdfkit");
 
-PDFDocument.prototype.table = function(table, arg0, arg1, arg2) {
-  let startX = this.page.margins.left,
-    startY = this.y;
-  let options = {};
-
-  if (typeof arg0 === "number" && typeof arg1 === "number") {
-    startX = arg0;
-    startY = arg1;
-
-    if (typeof arg2 === "object") options = arg2;
-  } else if (typeof arg0 === "object") {
-    options = arg0;
-  }
+// TODO: Let user programmatically set each text's alignment, font size and font family.
+// TODO: Let user programmatically set borders.
+// TODO: Be lenient if no headers are found.
+// 1. Let user customize each row. Let them set background color and border.
+// 2. There will not be any header. Do each row manually.
+PDFDocument.prototype.table = function(table, { x, y, options = {} }) {
+  let startX = x || this.page.margins.left;
+  let startY = y || this.y;
 
   const columnCount = table.headers.length;
   const columnSpacing = options.columnSpacing || 15;
@@ -34,6 +29,7 @@ PDFDocument.prototype.table = function(table, arg0, arg1, arg2) {
         width: columnWidth,
         align: "left"
       });
+
       result = Math.max(result, cellHeight);
     });
 
@@ -55,7 +51,9 @@ PDFDocument.prototype.table = function(table, arg0, arg1, arg2) {
   prepareHeader();
 
   // Check to have enough room for header and first rows
-  if (startY + 3 * computeRowHeight(table.headers) > maxY) this.addPage();
+  if (startY + 3 * computeRowHeight(table.headers) > maxY) {
+    this.addPage();
+  }
 
   // Print all headers
   table.headers.forEach((header, i) => {

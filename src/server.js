@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const port = 3000;
-const PDFDocument = require("./pdftable");
+const PDFDocument = require("./extension");
 const fs = require("fs");
 
 const createPDF = () => {
@@ -144,8 +144,20 @@ const createInvoicePDF = () => {
     }
   });
   const logoSVG = fs.readFileSync("src/logo.svg", "utf8");
+  const getUsableWidth = me => {
+    return me.page.width - me.page.margins.left - me.page.margins.right;
+  };
 
-  doc.addSVG(logoSVG, 50, -330, { width: 120 });
+  doc
+    .rect(
+      doc.page.margins.left,
+      80,
+      doc.page.width - doc.page.margins.left * 2,
+      doc.page.height - doc.page.margins.top * 2
+    )
+    .stroke();
+
+  doc.addSVG(logoSVG, doc.page.margins.left, -330, { width: 120 });
 
   doc
     .fontSize(23)
@@ -164,25 +176,38 @@ const createInvoicePDF = () => {
     .text("Misty")
     .text("info@ceruleangym.com");
 
-  doc.rect(450, 105, 120, 20).fill("green");
+  doc
+    .rect(
+      getUsableWidth(doc) * 0.8,
+      105,
+      getUsableWidth(doc) * 0.2 + doc.page.margins.right,
+      20
+    )
+    .fill("green");
 
   doc
     .font("Helvetica-Bold")
     .fill("white")
     .fontSize(11)
-    .text("Paid", 455, 110);
+    .text("Paid", getUsableWidth(doc) * 0.8 + 5, 110);
 
   doc
     .font("src/Lato-Regular.woff")
     .fontSize(12)
     .lineGap(0)
     .fill("black")
-    .text("Invoice #:  0009", 400, 180, { align: "left" })
+    .text("Invoice #:  0009", getUsableWidth(doc) * 0.8, 180, { align: "left" })
     .text("Invoice Date:  Oct 1, 2019", { align: "left" })
     .text("Due Date:  Oct 11, 2019", { align: "left" });
 
   doc
-    .roundedRect(420, 250, 150, 50, 5)
+    .roundedRect(
+      getUsableWidth(doc) * 0.8,
+      250,
+      getUsableWidth(doc) * 0.2 + doc.page.margins.right,
+      50,
+      5
+    )
     .stroke("grey")
     .lineWidth(2);
 
@@ -190,17 +215,17 @@ const createInvoicePDF = () => {
     .font("src/Lato-Regular.woff")
     .fill("black")
     .fontSize(12)
-    .text("Amount due:", 463, 260);
+    .text("Amount due:", getUsableWidth(doc) * 0.8, 260, { align: "center" });
 
   doc
     .font("Helvetica-Bold")
     .fontSize(13)
     .fill("black")
-    .text("5000P", 478);
+    .text("5000P", getUsableWidth(doc) * 0.8, 275, { align: "center" });
 
   doc
-    .moveTo(30, 320)
-    .lineTo(580, 320)
+    .moveTo(doc.page.margins.left - 20, 320)
+    .lineTo(getUsableWidth(doc) + doc.page.margins.right + 20, 320)
     .lineWidth(1)
     .stroke("grey");
 
@@ -208,7 +233,7 @@ const createInvoicePDF = () => {
     .font("Helvetica")
     .fontSize(13)
     .fill("black")
-    .text("Bill To:", 50, 340)
+    .text("Bill To:", doc.page.margins.left, 340)
     .moveDown()
     .font("src/Lato-Regular.woff")
     .fontSize(12)
@@ -223,13 +248,16 @@ const createInvoicePDF = () => {
     rows: [["Give me back my bike money", "1", "5000P", "5000P"]]
   };
 
-  doc.table(table0, 50, 480, {
-    prepareHeader: () => doc.font("Helvetica-Bold").fontSize(12),
-    prepareRow: () =>
-      doc
-        .font("src/Lato-Regular.woff")
-        .fontSize(12)
-        .fill("black")
+  doc.table(table0, {
+    y: 480,
+    options: {
+      prepareHeader: () => doc.font("Helvetica-Bold").fontSize(12),
+      prepareRow: () =>
+        doc
+          .font("src/Lato-Regular.woff")
+          .fontSize(12)
+          .fill("black")
+    }
   });
 
   const table1 = {
@@ -238,11 +266,16 @@ const createInvoicePDF = () => {
   };
 
   doc.table(table1, {
-    prepareRow: () =>
-      doc
-        .font("src/Lato-Regular.woff")
-        .fontSize(11)
-        .fill("black")
+    x: getUsableWidth(doc) * 0.85,
+    y: 540,
+    options: {
+      prepareRow: () =>
+        doc
+          .font("src/Lato-Regular.woff")
+          .fontSize(11)
+          .fill("black"),
+      width: getUsableWidth(doc) * 0.15 + doc.page.margins.right
+    }
   });
 
   doc.end();
