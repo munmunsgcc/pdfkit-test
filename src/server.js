@@ -143,6 +143,9 @@ const createInvoicePDF = () => {
       documentAssembly: false
     }
   });
+  const logoSVG = fs.readFileSync("src/logo.svg", "utf8");
+
+  doc.addSVG(logoSVG, 50, -330, { width: 120 });
 
   doc
     .fontSize(23)
@@ -272,7 +275,7 @@ app.get("/save-to-server", (req, res) => {
   // const doc = createPDF();
   const doc = createInvoicePDF();
 
-  doc.pipe(fs.createWriteStream("output.pdf"));
+  doc.pipe(fs.createWriteStream("Invoice 0009 - SGCC.pdf"));
 
   res.end("Done! Check project root.");
 });
