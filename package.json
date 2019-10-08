@@ -1,0 +1,15 @@
+{
+  "name": "pdfkit-test",
+  "private": true,
+  "description": "PDFkit Test",
+  "version": "0.1.0",
+  "author": "Cheng Mun Mun",
+  "license": "MIT",
+  "scripts": {
+    "build": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "pdfkit": "^0.10.0"
+  }
+}
