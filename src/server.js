@@ -4,20 +4,152 @@ const port = 3000;
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 
+const createPDF = () => {
+  // Note: All numbers are in inches.
+  // Note: You can do method chaining.
+  const doc = new PDFDocument({
+    size: "A4", // default is 'Letter'. Find full list of sizes here: https://github.com/foliojs/pdfkit/blob/b13423bf0a391ed1c33a2e277bc06c00cabd6bf9/lib/page.coffee#L72-L122
+    margin: 50, // inches. Unless stated otherwise, this margin is for all sides.
+    layout: "landscape", // default is portrait. Two available choices: 'landscape' or 'portrait'.
+    info: {
+      Title: "Title of doc", // Appears as the title of PDF. This is not the name of the PDF file.
+      Author: "I am ze author", // PDF prop
+      Subject: "This is subject kun" // PDF prop
+    },
+    // userPassword: "abc123", // you can lock the PDF with a password.
+    // Choose a version to decrypt the PDF. Check available versions here: https://pdfkit.org/docs/getting_started.html#encryption_and_access_privileges
+    pdfVersion: "1.3",
+    permissions: {
+      // You can check what permission is there here: https://pdfkit.org/docs/getting_started.html#encryption_and_access_privileges
+      printing: "lowResolution",
+      modifying: false,
+      copying: false,
+      annotating: false,
+      fillingForms: false,
+      contentAccessibility: false,
+      documentAssembly: false
+    }
+  });
+
+  // Add text in new line. Text align defaults to left.
+  // You can set text align 'left', 'right', 'center', 'justify'.
+  doc
+    .font("Helvetica")
+    .fontSize(22)
+    .text("Whoa there a new line!", { width: 400, align: "right" })
+    // Move down/Move up by X line. Defaults to 1 line if nothing specified.
+    .moveDown()
+    .moveUp(2)
+    .moveDown(2);
+
+  // Add texts at (x, y) === (100, 100) position.
+  doc
+    .font("Courier")
+    .fontSize(12)
+    .text("Hello world!", 150, 90);
+
+  // Creates 1-dimension list at (x, y), with options
+  // You can create multilists by using nested array.
+  doc
+    .font("Helvetica")
+    .list(["First", "Second", "Third"], 20, 20, {
+      bulletRadius: 10,
+      textIndent: 20,
+      bulletIndent: 20
+    })
+    .list(["Flavours", ["Chocolate", "Vanilla"]], {
+      bulletRadius: 3
+    });
+
+  // Add image with set width
+  doc
+    .image("src/sgcc-logo.png", 300, 200, { width: 50 })
+    .text("Width set", 300, 250);
+
+  // Force image to fit within dimensions
+  doc
+    .image("src/sgcc-logo.png", 400, 200, { fit: [20, 20] })
+    .rect(400, 200, 20, 20)
+    .stroke()
+    .text("Fit fit!", 400, 220);
+
+  // Scale the image
+  doc
+    .image("src/sgcc-logo.png", 500, 200, { scale: 0.25 })
+    .text("Scale!", 500, 200);
+
+  // We can overwrite initial options!
+  doc.addPage({
+    layout: "portrait",
+    margins: {
+      top: 10,
+      bottom: 20,
+      left: 30,
+      right: 40
+    }
+  });
+
+  // Added custom font
+  doc.font("src/Lato-Regular.woff").text("Page 2!");
+
+  // Draw a line
+  doc
+    .moveTo(20, 40)
+    .lineTo(50, 50)
+    .quadraticCurveTo(130, 200, 150, 120)
+    .bezierCurveTo(190, -40, 200, 200, 300, 150)
+    .stroke();
+
+  // Draw a rectangle
+  // x, y, width, height
+  doc.rect(50, 100, 20, 20).stroke();
+
+  // Draw a rectangle with corner radius and red fill
+  // x, y, width, height, cornerRadius
+  doc.roundedRect(50, 150, 30, 30, 5).fill("red");
+
+  // Draw a polygon
+  doc.polygon([100, 0], [50, 100], [150, 100]).stroke();
+
+  // Draw a circle with dashes
+  // cx, cy, radius
+  doc
+    .circle(50, 200, 40)
+    .dash(5, { space: 10 })
+    .stroke();
+
+  // This command flushes the PDF pages for us
+  doc.end();
+
+  return doc;
+};
+
+// Root
 app.get("/", (req, res) => {
-  res.send(`Hello world <iframe src="/show-in-browser" />`);
+  res.send(`Hello world`);
 });
 
-app.get("/show-in-browser", (req, res) => {
-  const doc = new PDFDocument();
+// Show pdf as iframe
+app.get("/as-iframe", (req, res) => {
+  res.send(`As iframe <iframe src="/output" />`);
+});
 
+// Show pdf as a stream. Doesn't save onto server.
+app.get("/output", (req, res) => {
   res.contentType("application/pdf");
 
+  const doc = createPDF();
+
   doc.pipe(res);
+});
 
-  doc.text("Hello world!", 100, 100);
+// Saves a copy onto server.
+app.get("/save-to-server", (req, res) => {
+  const doc = createPDF();
 
-  doc.end();
+  doc.pipe(fs.createWriteStream("output.pdf"));
+
+  res.end("Done! Check project root.");
 });
 
 app.listen(port, () => {
